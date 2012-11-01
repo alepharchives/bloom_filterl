@@ -2,6 +2,9 @@
 -include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+spec_test() ->
+    ?assertEqual([], proper:check_specs(bloom_filter)).
+
 proper_test() ->
     ?assert(proper:quickcheck(prop_add_element())).
 

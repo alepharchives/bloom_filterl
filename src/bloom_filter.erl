@@ -5,15 +5,22 @@
 
 -define(SALT, ?MODULE).
 
+-type bloom_filter() :: {binary(), pos_integer(), pos_integer()}.
+
+-spec new(pos_integer(), float()) -> bloom_filter().
+new(_, ErrorRate) when ErrorRate =< 0; ErrorRate > 1.0 ->
+    error(badarg);
 new(Size, ErrorRate) ->
     {M, K} = layout(Size, ErrorRate),
     {hipe_bifs:bitarray(M, false), M, K}.
 
+-spec add_element(term(), bloom_filter()) -> bloom_filter().
 add_element(Key, BloomFilter) ->
     lists:foldl(fun (Idx, BF) -> set_bit(Idx, BF) end,
                 BloomFilter,
                 indices(Key, BloomFilter)).
 
+-spec is_element(term(), bloom_filter()) -> boolean().
 is_element(Key, BloomFilter) ->
     lists:all(fun (Idx) -> is_bit(Idx, BloomFilter) end,
               indices(Key, BloomFilter)).
