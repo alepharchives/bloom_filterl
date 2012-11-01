@@ -4,11 +4,10 @@
 -import(math, [log/1, pow/2]).
 
 -define(SALT, ?MODULE).
--define(BUCKET_SIZE, 32). %% 32 bits per bucket
 
 new(Size, ErrorRate) ->
     {M, K} = layout(Size, ErrorRate),
-    {array:new(buckets(M), {default, 0}), M, K}.
+    {hipe_bifs:bitarray(M, false), M, K}.
 
 add_element(Key, BloomFilter) ->
     lists:foldl(fun (Idx, BF) -> set_bit(Idx, BF) end,
@@ -20,27 +19,15 @@ is_element(Key, BloomFilter) ->
               indices(Key, BloomFilter)).
 
 set_bit(Idx, {Array, M, K}) when Idx < M ->
-    Bucket = bucket(Idx, M),
-    Mask = array:get(Bucket, Array),
-    NewArray = array:set(Bucket, Mask bor bit_mask(Idx), Array),
-    {NewArray, M, K}.
+    {hipe_bifs:bitarray_update(Array, Idx, true), M, K}.
 
 is_bit(Idx, {Array, M, _K}) when Idx < M ->
-    array:get(bucket(Idx, M), Array) band bit_mask(Idx) /= 0.
-
-bit_mask(Index) ->
-    1 bsl (Index rem ?BUCKET_SIZE).
+    hipe_bifs:bitarray_sub(Array, Idx).
 
 layout(N, P) ->
     M = trunc(-(N * log(P))/pow(log(2),2) + 1),
     K = trunc(M * log(2) / N + 1),
     {M, K}.
-
-buckets(M) ->
-    trunc(M / ?BUCKET_SIZE + 1).
-
-bucket(Idx, M) when Idx < M ->
-    trunc(Idx / M * buckets(M)).
 
 indices(Key, {_Array, M, K}) ->
     lists:map(fun (I) -> double_hash(Key, I) rem M end,
