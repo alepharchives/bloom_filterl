@@ -1,7 +1,7 @@
 -module(bloom_filter).
 
--export([new/2, add_element/2, is_element/2]).
--import(math, [log/1, pow/2]).
+-export([new/2, add_element/2, is_element/2, fpr/2]).
+-import(math, [log/1, pow/2, exp/1]).
 
 -define(SALT, ?MODULE).
 
@@ -24,6 +24,10 @@ add_element(Key, BloomFilter) ->
 is_element(Key, BloomFilter) ->
     lists:all(fun (Idx) -> is_bit(Idx, BloomFilter) end,
               indices(Key, BloomFilter)).
+
+-spec fpr(pos_integer(), bloom_filter()) -> float().
+fpr(N, {_Array, M, K}) ->
+    pow(1 - exp(-K * (N + 0.5) / (M - 1)), K).
 
 set_bit(Idx, {Array, M, K}) when Idx < M ->
     {hipe_bifs:bitarray_update(Array, Idx, true), M, K}.
